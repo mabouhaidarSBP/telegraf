@@ -67,7 +67,9 @@ default['telegraf']['inputs'] = {
   'disk' => {},
   'diskio' => {},
   'mem' => {},
-  'net' => {},
+  'net' => {
+    'ignore_protocol_stats' => true,
+  },
   'swap' => {},
   'system' => {},
 }
