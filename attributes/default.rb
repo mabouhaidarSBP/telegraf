@@ -62,12 +62,14 @@ default['telegraf']['inputs'] = {
   'cpu' => {
     'percpu' => true,
     'totalcpu' => true,
-    'drop' => ['cpu_time'],
+    'fieldexclude' => ['cpu_time'],
   },
   'disk' => {},
   'diskio' => {},
   'mem' => {},
-  'net' => {},
+  'net' => {
+    'ignore_protocol_stats' => true,
+  },
   'swap' => {},
   'system' => {},
 }
