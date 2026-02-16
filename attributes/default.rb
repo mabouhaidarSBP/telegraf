@@ -89,3 +89,4 @@ default['telegraf']['perf_counters'] = {
     'IncludeTotal' => true,
   },
 }
+default['telegraf']['processors'] = {}
