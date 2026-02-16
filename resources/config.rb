@@ -84,7 +84,7 @@ action :create do
 
   telegraf_processors new_resource.name do
     path telegraf_d
-    inputs new_resource.processors
+    processors new_resource.processors
     reload false
     action :create
     not_if { new_resource.processors.empty? }
