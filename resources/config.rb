@@ -81,4 +81,13 @@ action :create do
     only_if { platform_family?('windows') }
     notifies :restart, "service[telegraf_#{new_resource.name}]", :delayed
   end
+
+  telegraf_processors new_resource.name do
+    path telegraf_d
+    inputs new_resource.processors
+    reload false
+    action :create
+    not_if { new_resource.processors.empty? }
+    notifies :restart, "service[telegraf_#{new_resource.name}]", :delayed
+  end
 end
