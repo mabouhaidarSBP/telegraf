@@ -1,9 +1,9 @@
-# resources/plugins.rb
+# resources/processors.rb
 #
 # Cookbook Name:: telegraf
 # Resource:: processors
 #
-# Copyright 2015-2017 NorthPage
+# Copyright 2026 Schuberg Philis
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
