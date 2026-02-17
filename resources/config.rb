@@ -23,7 +23,13 @@ property :inputs, Hash, default: {}
 property :perf_counters, Hash, default: {}
 property :processors, Hash, default: {}
 property :aggregators, Hash, default: {}
+property :aggregators, Hash, default: {}
+property :config, Hash, default: {}
+property :inputs, Hash, default: {}
+property :outputs, Hash, default: {}
 property :path, String, default: node['telegraf']['config_file_path']
+property :perf_counters, Hash, default: {}
+property :processors, Hash, default: {}
 
 default_action :create
 
