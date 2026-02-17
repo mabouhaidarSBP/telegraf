@@ -30,4 +30,5 @@ telegraf_config 'default' do
   perf_counters lazy { node['telegraf']['perf_counters'] }
   inputs lazy { node['telegraf']['inputs'] }
   processors lazy { node['telegraf']['processors']}
+  aggregators lazy { node['telegraf']['aggregators']}
 end

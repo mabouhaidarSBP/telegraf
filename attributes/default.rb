@@ -90,3 +90,5 @@ default['telegraf']['perf_counters'] = {
   },
 }
 default['telegraf']['processors'] = {}
+
+default['telegraf']['aggregators'] = {}

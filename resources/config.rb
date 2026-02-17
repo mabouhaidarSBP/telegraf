@@ -22,6 +22,7 @@ property :outputs, Hash, default: {}
 property :inputs, Hash, default: {}
 property :perf_counters, Hash, default: {}
 property :processors, Hash, default: {}
+property :aggregators, Hash, default: {}
 property :path, String, default: node['telegraf']['config_file_path']
 
 default_action :create
@@ -89,6 +90,15 @@ action :create do
     reload false
     action :create
     not_if { new_resource.processors.empty? }
+    notifies :restart, "service[telegraf_#{new_resource.name}]", :delayed
+  end
+
+  telegraf_aggregators new_resource.name do
+    path telegraf_d
+    aggregators new_resource.aggregators
+    reload false
+    action :create
+    not_if { new_resource.aggregators.empty? }
     notifies :restart, "service[telegraf_#{new_resource.name}]", :delayed
   end
 end

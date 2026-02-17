@@ -37,6 +37,8 @@ as needed.  Alternatively, you can use the custom resources directly.
 | node['telegraf']['include_repository'] | [TrueClass, FalseClass] | Whether or not to pull in the InfluxDB repository to install from. | true |
 | node['telegraf']['inputs']           | Hash   | telegraf inputs                                       | {'cpu' => {'percpu' => true,'totalcpu' => true,'drop' => ['cpu_time'],},'disk' => {},'diskio' => {},'mem' => {},'net' => {},'swap' => {},'system' => {}}                |
 | node['telegraf']['perf_counters']           | Hash   | telegraf performance counters | {{  'Processor' => { 'Instances' => ['*'] 'Counters' => ['% Idle Time','% Interrupt Time','% Privileged Time','% User Time','% Processor Time','% DPC Time',],'Measurement' => 'win_cpu','IncludeTotal' => true}} |
+| node['telegraf']['processors']           | Hash   | telegraf processors                                       | {}                |
+| node['telegraf']['aggregators']          | Hash   | telegraf aggregators                                      | {}                |
 
 
 ### Custom Resources
@@ -63,7 +65,9 @@ telegraf_config 'default' do
   config node['telegraf']['config']
   outputs node['telegraf']['outputs']
   inputs node['telegraf']['inputs']
-  perf_counters node['telegraf']['perf_counters']  
+  perf_counters node['telegraf']['perf_counters']
+  processors node['telegraf']['processors']
+  aggregators node['telegraf']['aggregators']
 end
 ```
 
@@ -151,6 +155,81 @@ For more examples visit [influxdata/telegraf/plugins/inputs/win_perf_counters](h
 Note that there are three optional parameters for this resource that could've been left out in this case:
   - service_name [default: 'default'] if you need to override which service should be restarted when the config changes;
   - reload [default: true] whether to restart the service when the config changes;
+
+#### telegraf_processors
+
+Writes out telegraf processors configuration file.
+
+```ruby
+telegraf_processors 'default' do
+  processors node['telegraf']['processors']
+end
+```
+
+You can call this several times to create multiple processors config files. You'll need to specify different names for each telegraf_processors resource, so they'll create separate config files.
+
+For example, to add a rename processor:
+
+```ruby
+node.default['telegraf']['rename_processor'] = {
+  'rename' => {
+    'replace' => [
+      {
+        'field' => 'status',
+        'dest' => 'status_code'
+      }
+    ]
+  }
+}
+
+telegraf_processors 'rename_processor' do
+  processors node['telegraf']['rename_processor']
+  service_name 'default'
+  reload true
+  rootonly false
+end
+```
+
+Note that there are three optional parameters for this resource that could've been left out in this case:
+  - service_name [default: 'default'] if you need to override which service should be restarted when the config changes;
+  - reload [default: true] whether to restart the service when the config changes;
+  - rootonly [default: false] whether to restrict access to the config file so it's not world readable;
+
+#### telegraf_aggregators
+
+Writes out telegraf aggregators configuration file.
+
+```ruby
+telegraf_aggregators 'default' do
+  aggregators node['telegraf']['aggregators']
+end
+```
+
+You can call this several times to create multiple aggregators config files. You'll need to specify different names for each telegraf_aggregators resource, so they'll create separate config files.
+
+For example, to add a basicstats aggregator:
+
+```ruby
+node.default['telegraf']['basicstats_aggregator'] = {
+  'basicstats' => {
+    'period' => '30s',
+    'drop_original' => false,
+    'stats' => ['mean', 'min', 'max']
+  }
+}
+
+telegraf_aggregators 'basicstats_aggregator' do
+  aggregators node['telegraf']['basicstats_aggregator']
+  service_name 'default'
+  reload true
+  rootonly false
+end
+```
+
+Note that there are three optional parameters for this resource that could've been left out in this case:
+  - service_name [default: 'default'] if you need to override which service should be restarted when the config changes;
+  - reload [default: true] whether to restart the service when the config changes;
+  - rootonly [default: false] whether to restrict access to the config file so it's not world readable;
 
 ## License and Authors
 
