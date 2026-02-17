@@ -30,13 +30,13 @@ as needed.  Alternatively, you can use the custom resources directly.
 
 | Key                                  | Type   | Description                                           | Default                                                                                                                                                             |
 |--------------------------------------|--------|-------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| node['telegraf']['version']          | String | Version of telegraf to install, nil = latest          | '0.10.0-1'                                                                                                                                                          |
-| node['telegraf']['config_file_path'] | String | Location of the telgraf main config file              | '/etc/telegraf/telegraf.conf'                                                                                                                                       |
-| node['telegraf']['config']           | Hash   | Config variables to be written to the telegraf config | {'tags' => {},'agent' => {'interval' => '10s','round_interval' => true,'flush_interval' => '10s','flush_jitter' => '5s'}                                            |
-| node['telegraf']['outputs']          | Hash  | telegraf outputs                                      | {'influxdb' => {'urls' => ['http://localhost:8086'],'database' => 'telegraf','precision' => 's'}}                                                                   |
+| node['telegraf']['version']          | String | Version of telegraf to install, nil = latest          | nil                                                                                                                                                          |
+| node['telegraf']['config_file_path'] | String | Location of the telegraf main config file (platform-aware: '/etc/telegraf/telegraf.conf' on Unix, '#{ENV['ProgramW6432']}\\telegraf\\telegraf.conf' on Windows) | '/etc/telegraf/telegraf.conf'                                                                                                                                       |
+| node['telegraf']['config']           | Hash   | Config variables to be written to the telegraf config | {'tags' => {}, 'agent' => {'interval' => '10s', 'round_interval' => true, 'flush_interval' => '10s', 'flush_jitter' => '5s'}}                                            |
+| node['telegraf']['outputs']          | Hash  | telegraf outputs                                      | {}                                                                   |
 | node['telegraf']['include_repository'] | [TrueClass, FalseClass] | Whether or not to pull in the InfluxDB repository to install from. | true |
-| node['telegraf']['inputs']           | Hash   | telegraf inputs                                       | {'cpu' => {'percpu' => true,'totalcpu' => true,'drop' => ['cpu_time'],},'disk' => {},'diskio' => {},'mem' => {},'net' => {},'swap' => {},'system' => {}}                |
-| node['telegraf']['perf_counters']           | Hash   | telegraf performance counters | {{  'Processor' => { 'Instances' => ['*'] 'Counters' => ['% Idle Time','% Interrupt Time','% Privileged Time','% User Time','% Processor Time','% DPC Time',],'Measurement' => 'win_cpu','IncludeTotal' => true}} |
+| node['telegraf']['inputs']           | Hash   | telegraf inputs                                       | {'cpu' => {'percpu' => true, 'totalcpu' => true, 'fieldexclude' => ['cpu_time']}, 'disk' => {}, 'diskio' => {}, 'mem' => {}, 'net' => {'ignore_protocol_stats' => true}, 'swap' => {}, 'system' => {}}                |
+| node['telegraf']['perf_counters']           | Hash   | telegraf performance counters | {'Processor' => {'Instances' => ['*'], 'Counters' => ['% Idle Time', '% Interrupt Time', '% Privileged Time', '% User Time', '% Processor Time', '% DPC Time'], 'Measurement' => 'win_cpu', 'IncludeTotal' => true}} |
 | node['telegraf']['processors']           | Hash   | telegraf processors                                       | {}                |
 | node['telegraf']['aggregators']          | Hash   | telegraf aggregators                                      | {}                |
 
@@ -80,6 +80,11 @@ telegraf_outputs 'default' do
   outputs node['telegraf']['outputs']
 end
 ```
+
+Note that there are three optional parameters for this resource that could've been left out in this case:
+  - service_name [default: 'default'] if you need to override which service should be restarted when the config changes;
+  - reload [default: true] whether to restart the service when the config changes;
+  - rootonly [default: false] whether to restrict access to the config file so it's not world readable;
 
 #### telegraf_inputs
 
@@ -152,7 +157,7 @@ end
 
 For more examples visit [influxdata/telegraf/plugins/inputs/win_perf_counters](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/win_perf_counters)
 
-Note that there are three optional parameters for this resource that could've been left out in this case:
+Note that there are two optional parameters for this resource that could've been left out in this case:
   - service_name [default: 'default'] if you need to override which service should be restarted when the config changes;
   - reload [default: true] whether to restart the service when the config changes;
 
@@ -171,7 +176,7 @@ You can call this several times to create multiple processors config files. You'
 For example, to add a rename processor:
 
 ```ruby
-node.default['telegraf']['rename_processor'] = {
+node.default['telegraf']['rename'] = {
   'rename' => {
     'replace' => [
       {
@@ -182,8 +187,8 @@ node.default['telegraf']['rename_processor'] = {
   }
 }
 
-telegraf_processors 'rename_processor' do
-  processors node['telegraf']['rename_processor']
+telegraf_processors 'rename' do
+  processors node['telegraf']['rename']
   service_name 'default'
   reload true
   rootonly false
@@ -210,7 +215,7 @@ You can call this several times to create multiple aggregators config files. You
 For example, to add a basicstats aggregator:
 
 ```ruby
-node.default['telegraf']['basicstats_aggregator'] = {
+node.default['telegraf']['basicstats'] = {
   'basicstats' => {
     'period' => '30s',
     'drop_original' => false,
@@ -218,8 +223,8 @@ node.default['telegraf']['basicstats_aggregator'] = {
   }
 }
 
-telegraf_aggregators 'basicstats_aggregator' do
-  aggregators node['telegraf']['basicstats_aggregator']
+telegraf_aggregators 'basicstats' do
+  aggregators node['telegraf']['basicstats']
   service_name 'default'
   reload true
   rootonly false
@@ -230,6 +235,19 @@ Note that there are three optional parameters for this resource that could've be
   - service_name [default: 'default'] if you need to override which service should be restarted when the config changes;
   - reload [default: true] whether to restart the service when the config changes;
   - rootonly [default: false] whether to restrict access to the config file so it's not world readable;
+
+### Important: Processor and Aggregator Processing Flow
+
+When using both processors and aggregators together (Telegraf v1.17+), metrics flow through a specific pipeline:
+
+1. Metrics from inputs → **Processors** (first pass)
+2. Processed metrics → **Aggregators** (collect and aggregate)
+3. Aggregated metrics → **Processors** (second pass) → Outputs
+
+**Important considerations**:
+- Processors must be **idempotent** (repeatable without side effects) since they run twice
+- Non-idempotent processors may cause unexpected behavior when processing aggregated data
+- See [Telegraf documentation](https://docs.influxdata.com/telegraf/v1/configure_plugins/aggregator_processor/) for details
 
 ## License and Authors
 
