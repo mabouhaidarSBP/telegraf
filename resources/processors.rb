@@ -17,11 +17,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-property :processors, Hash, required: true
 property :path, String, default: ::File.dirname(node['telegraf']['config_file_path']) + '/telegraf.d'
-property :service_name, String, default: 'default'
+property :processors, Hash, required: true
 property :reload, [true, false], default: true
 property :rootonly, [true, false], default: false
+property :service_name, String, default: 'default'
 
 default_action :create
 
