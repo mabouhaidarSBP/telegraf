@@ -17,12 +17,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-property :config, Hash, default: {}
-property :outputs, Hash, default: {}
-property :inputs, Hash, default: {}
-property :perf_counters, Hash, default: {}
-property :processors, Hash, default: {}
-property :aggregators, Hash, default: {}
 property :aggregators, Hash, default: {}
 property :config, Hash, default: {}
 property :inputs, Hash, default: {}
